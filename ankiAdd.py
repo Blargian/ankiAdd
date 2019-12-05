@@ -52,7 +52,7 @@ def getData(word):
             result=cursor.fetchone()
             partner = ''.join(result[0])
 
-        print(id,word,category,aspect,partner)
+        print(id,word,category)
     else:
         print("not found")
 
@@ -103,4 +103,8 @@ def get_image(search_term):
                         f.write(picture_request.content)
         count+=1
 
-    
+if __name__ == '__main__':
+    word = input("Please enter a word: ")
+    getData(word)
+    get_image(word)
+    get_pronounciation(word)
