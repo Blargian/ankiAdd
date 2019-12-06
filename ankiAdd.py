@@ -60,8 +60,12 @@ def getData(word):
 
 def get_pronounciation(word):
 
-    pronounciation = requests.get("https://apifree.forvo.com/key/de6f30e76ae422dd36a2b7367439d5fd/format/json/action/word-pronunciations/word/{}/cat/language/ru".format(word))
-    pronounciation_json = pronounciation.json()
+    UTF8 = word.encode()
+    #remove the b' and trailing '
+    UTF8 = str(UTF8)[2:-1]
+    UTF8 = UTF8.replace("\\x","%").upper()
+    search = "https://apifree.forvo.com/key/de6f30e76ae422dd36a2b7367439d5fd/format/json/action/word-pronunciations/word/{}/cat/language/ru".format(UTF8)
+    pronounciation_json = requests.get(search).json()
     items = pronounciation_json["items"]
     urls = []
 
@@ -91,9 +95,10 @@ def get_image(search_term):
         urls.append(hits[i]["webformatURL"])
 
     count =0
+    picture_request = requests.Session()
     for url in urls:
-        picture_request = requests.get(url)
-        if picture_request.status_code == 200:
+        picture_request.get(url)
+        if picture_request == 200:
             try:
                 with open(dir_path+r'\\images\\{}.jpg'.format(count),'wb') as f:
                     f.write(picture_request.content)
