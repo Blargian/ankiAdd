@@ -3,6 +3,7 @@ import time
 import urllib.request
 import requests
 import os
+from multiprocessing import Pool
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 mydb = mysql.connector.connect(
@@ -60,23 +61,37 @@ def getData(word):
 
 def get_pronounciation(word):
 
-    pronounciation = requests.get("https://apifree.forvo.com/key/de6f30e76ae422dd36a2b7367439d5fd/format/json/action/word-pronunciations/word/{}/cat/language/ru".format(word))
-    pronounciation_json = pronounciation.json()
+    UTF8 = word.encode()
+    #remove the b' and trailing '
+    UTF8 = str(UTF8)[2:-1]
+    UTF8 = UTF8.replace("\\x","%").upper()
+    #print(UTF8)
+    search = "https://apifree.forvo.com/action/word-pronunciations/format/json/word/{}/id_lang_speak/138/key/de6f30e76ae422dd36a2b7367439d5fd/".format(UTF8)
+    #print(search)
+
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
+        pronounciation_json = requests.get(search,headers=headers)
+    except:
+        print("Forvo API response: "+str(pronounciation_json))
+    
+    pronounciation_json = pronounciation_json.json()
     items = pronounciation_json["items"]
     urls = []
 
     for i in range(len(items)):
         urls.append(items[i]["pathmp3"])
 
-    pronounce_request = requests.get(urls[0])
+    pronounce_request = requests.get(urls[0],headers=headers)
     if pronounce_request.status_code == 200:
         try:
             with open(dir_path+r'\\audio\\{}.mp3'.format(word),'wb') as f:
-                f.write(pronounce.content)
+                f.write(pronounce_request.content)
         except:
                 os.mkdir(dir_path+r'\\audio\\')
                 with open(dir_path+r'\\audio\\{}.mp3'.format(word),'wb') as f:
-                    f.write(pronounce_request.content)
+                    f.write(pronounce_request.content)    
+    
 
 #This function uses the Forvo API to pullthrough the audio pronounciation.
 def get_image(search_term):
@@ -90,21 +105,38 @@ def get_image(search_term):
     for i in range(len(hits)):
         urls.append(hits[i]["webformatURL"])
 
-    count =0
-    for url in urls:
-        picture_request = requests.get(url)
-        if picture_request.status_code == 200:
+    return urls    
+
+    # count =0
+    # for url in urls:
+    #     picture_request = requests.get(url)
+    #     if picture_request.status_code == 200:
+    #         try:
+    #             with open(dir_path+r'\\images\\{}.jpg'.format(count),'wb') as f:
+    #                 f.write(picture_request.content)
+    #         except:
+    #                 os.mkdir(dir_path+r'\\images\\')
+    #                 with open(dir_path+r'\\images\\{}.jpg'.format(count),'wb') as f:
+    #                     f.write(picture_request.content)
+    #     count+=1
+
+def persist_image(url):
+    name = url[24:-10]
+    picture_request = requests.get(url)
+    if picture_request.status_code == 200:
             try:
-                with open(dir_path+r'\\images\\{}.jpg'.format(count),'wb') as f:
+                with open(dir_path+r'\\images\\{}.jpg'.format(name),'wb') as f:
                     f.write(picture_request.content)
             except:
                     os.mkdir(dir_path+r'\\images\\')
-                    with open(dir_path+r'\\images\\{}.jpg'.format(count),'wb') as f:
+                    with open(dir_path+r'\\images\\{}.jpg'.format(name),'wb') as f:
                         f.write(picture_request.content)
-        count+=1
+    return True
 
 if __name__ == '__main__':
     word = input("Please enter a word: ")
     getData(word)
-    get_image(word)
+    image_urls = get_image(word)
+    pool = Pool(20)
+    results = pool.map(persist_image, image_urls)
     get_pronounciation(word)
