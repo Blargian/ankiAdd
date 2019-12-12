@@ -8,6 +8,9 @@ import eel
 
 eel.init('web')
 
+google_api_key = "AIzaSyBa6-mI1X2bKcSPDvJxs4Xvbxq-ZeSd87w"
+google_cx="008875257392179325686:nuke64lz8rv"
+
 dir_path = os.path.dirname(os.path.realpath(__file__))
 mydb = mysql.connector.connect(
     host='localhost',
@@ -143,6 +146,17 @@ def image_download(url):
     pool = Pool(20)
     results = pool.map(persist_image, url)
 
-if __name__ == '__main__':
-    eel.start('index.html', size=(1000, 600))
+#Uses the google image search API
+def google_image(search_term):
+    urls = []
+    google_request = requests.get("https://www.googleapis.com/customsearch/v1?key={}&cx={}&q={}&searchType=image&fileType=jpg&imgSize=medium&alt=json".format(google_api_key,google_cx,search_term))
+    google_request = google_request.json()
+    hits = google_request["items"]
+    #print(google_request)
     
+    for i in range(len(hits)):
+         urls.append(hits[i]["link"])
+    return urls   
+
+if __name__ == '__main__':
+    eel.start('index.html', size=(1000, 600))    
