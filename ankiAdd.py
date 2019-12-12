@@ -4,6 +4,9 @@ import urllib.request
 import requests
 import os
 from multiprocessing import Pool
+import eel
+
+eel.init('web')
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 mydb = mysql.connector.connect(
@@ -14,6 +17,7 @@ mydb = mysql.connector.connect(
 )
 
 #This function takes in a word as parameter and returns the word and type
+@eel.expose
 def getData(word):
     
     cursor = mydb.cursor()
@@ -28,12 +32,24 @@ def getData(word):
     if(result!=None):
         #get the word
         word = ''.join(result[0])
+		
+		#get the accented
+        id_query = "SELECT accented FROM words WHERE bare = \"{}\" ".format(word)
+        cursor.execute(id_query)
+        result=cursor.fetchone()
+        accented = result[0]
         
         #get the ID
         id_query = "SELECT id FROM words WHERE bare = \"{}\" ".format(word)
         cursor.execute(id_query)
         result=cursor.fetchone()
         id = result[0]
+		
+		#get the translations
+        id_query = "SELECT tl FROM translations WHERE word_id={} and lang=\"en\" ".format(id)
+        cursor.execute(id_query)
+        result=cursor.fetchone()
+        translation = result[0]
 
         #get the category
         category_query = "SELECT type FROM words WHERE bare = \"{}\" ".format(word)
@@ -53,12 +69,13 @@ def getData(word):
             result=cursor.fetchone()
             partner = ''.join(result[0])
 
-        print(id,word,category)
+        return accented, category, translation
     else:
         print("not found")
+        return False
 
 # This function uses the Pixabay API to pull through 10 images
-
+@eel.expose
 def get_pronounciation(word):
 
     UTF8 = word.encode()
@@ -94,6 +111,7 @@ def get_pronounciation(word):
     
 
 #This function uses the Forvo API to pullthrough the audio pronounciation.
+@eel.expose
 def get_image(search_term):
 
     number_images = 10
@@ -105,20 +123,7 @@ def get_image(search_term):
     for i in range(len(hits)):
         urls.append(hits[i]["webformatURL"])
 
-    return urls    
-
-    # count =0
-    # for url in urls:
-    #     picture_request = requests.get(url)
-    #     if picture_request.status_code == 200:
-    #         try:
-    #             with open(dir_path+r'\\images\\{}.jpg'.format(count),'wb') as f:
-    #                 f.write(picture_request.content)
-    #         except:
-    #                 os.mkdir(dir_path+r'\\images\\')
-    #                 with open(dir_path+r'\\images\\{}.jpg'.format(count),'wb') as f:
-    #                     f.write(picture_request.content)
-    #     count+=1
+    return urls   
 
 def persist_image(url):
     name = url[24:-10]
@@ -132,11 +137,12 @@ def persist_image(url):
                     with open(dir_path+r'\\images\\{}.jpg'.format(name),'wb') as f:
                         f.write(picture_request.content)
     return True
+	
+@eel.expose
+def image_download(url):
+    pool = Pool(20)
+    results = pool.map(persist_image, url)
 
 if __name__ == '__main__':
-    word = input("Please enter a word: ")
-    getData(word)
-    image_urls = get_image(word)
-    pool = Pool(20)
-    results = pool.map(persist_image, image_urls)
-    get_pronounciation(word)
+    eel.start('index.html', size=(1000, 600))
+    
