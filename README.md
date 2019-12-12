@@ -8,3 +8,7 @@ Have added functions to access openrussian db, to obtain pictures using the Pixa
 07/12/2019 
 
 Fixed some bugs with the fetching of images and pronounciation. 
+
+12/12/2019 
+
+Added GUI functionality using python eel and HTML,CSS,Javascript and Bootstrap. 
