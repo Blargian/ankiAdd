@@ -20,6 +20,7 @@ function getWord(){
     });
     console.log("got here")
     eel.get_pronounciation(word);
+
     // eel.get_image(word)(function(ret){
     //     eel.image_download(ret);
     // });
@@ -71,3 +72,9 @@ function getWord(){
         }
     });  
 };
+
+    eel.get_image(word)(function(ret){
+        eel.image_download(ret);
+    });
+    
+}
