@@ -29,12 +29,6 @@ function getWord(){
 
     eel.get_image(word)(function(ret) {
 
-        //Clear the previous image grid population first
-        var retrieved_images = getElementById("retrieved_images");
-        while(retrieved_images.firstChild){
-            retrieved_images.removeChild(retrievedImages.firstChild);
-        }
-
         //Create the first row within the div which has id="retrieved_images" and give it an id of row 0.
         // row_number functions as a variable to be incremented when three images have been added per row
         // and used within the naming of rows so that subsequent groups of three images are added to a 
@@ -77,4 +71,4 @@ function getWord(){
         eel.image_download(ret);
     });
     
-}
+
