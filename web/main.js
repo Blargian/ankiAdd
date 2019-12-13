@@ -18,7 +18,7 @@ function getWord(){
         word_category.textContent = category;
         word_translation.textContent = translation;
     });
-    console.log("got here")
+
     eel.get_pronounciation(word);
 
     // eel.get_image(word)(function(ret){
@@ -27,48 +27,33 @@ function getWord(){
 
     //handling of the images
 
-    eel.get_image(word)(function(ret) {
+    eel.google_image(word)(function(ret) {
 
-        //Create the first row within the div which has id="retrieved_images" and give it an id of row 0.
-        // row_number functions as a variable to be incremented when three images have been added per row
-        // and used within the naming of rows so that subsequent groups of three images are added to a 
-        //new row. 
-
-        var ele_row = document.createElement("div");
-        ele_row.className = "row";
-        row_number = 0;
-        ele_row.id = "row" + String(row_number);
-
-        document.getElementById("retrieved_images").appendChild(ele_row);
-
-        for (i = 0;i < 10; i++) {
-
-            if(i/3 !=1){
-                var ele_div = document.createElement("div");
-                ele_div.className = "col-md-4";
-                ele_div.id = "image_column" + String(i)
-
-                var ele_image = document.createElement("img");
-                ele_image.src=ret[i];
-
-                ele_image.width=200;
-                ele_image.height=200;
-
-                document.getElementById("row" + String(row_number)).appendChild(ele_div);
-                document.getElementById("image_column" + String(i)).appendChild(ele_image);
-            } else {
-                row_number++;
-                var ele_row = document.createElement("div");
-                ele_row.className = "row";
-                ele_row.id = "row" + String(row_number);
-                document.getElementById("retrieved_images").appendChild(ele_row);
-            }
+        if(String(ret)=="False"){
+            console.log("No results found");
         }
+
+        var ele_row = document.getElementsByClassName('row text-center text-lg-left')[0];
+        console.log(ele_row);
+        
+        for (i=0;i<8;i++){
+            var ele_div_outer =document.createElement("div");
+            ele_div_outer.className = "col-lg-3 col-md-4 col-6";
+            ele_a = document.createElement("a");
+            ele_a.className = "d-block mb-4 h-100";
+            ele_img = document.createElement("img");
+            ele_img.className="img-fluid img-thumbnail";
+            ele_img.setAttribute('src', ret[i]);
+            ele_row.appendChild(ele_div_outer);
+            ele_div_outer.appendChild(ele_a);
+            ele_a.appendChild(ele_img);
+        }
+
     });  
 };
 
-    eel.get_image(word)(function(ret){
-        eel.image_download(ret);
-    });
+    // eel.get_image(word)(function(ret){
+    //     eel.image_download(ret);
+    // });
     
 
