@@ -12,3 +12,7 @@ Fixed some bugs with the fetching of images and pronounciation.
 12/12/2019 
 
 Added GUI functionality using python eel and HTML,CSS,Javascript and Bootstrap. 
+
+13/12/2019
+
+Added Google images API functionality. The images now display in a grid on the page for a desired search term. 
