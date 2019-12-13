@@ -44,6 +44,7 @@ function getWord(){
             ele_img = document.createElement("img");
             ele_img.className="img-fluid img-thumbnail";
             ele_img.setAttribute('src', ret[i]);
+            ele_img.setAttribute('onclick', 'selectImage(this);');
             ele_row.appendChild(ele_div_outer);
             ele_div_outer.appendChild(ele_a);
             ele_a.appendChild(ele_img);
@@ -51,6 +52,21 @@ function getWord(){
 
     });  
 };
+
+function selectImage(elem){
+    var image_clicked_url = elem.src;
+    console.log(image_clicked_url);
+
+    var parent = elem.parentNode;
+    var wrapper = document.createElement('div');
+    wrapper.className = "view";
+    parent.replaceChild(wrapper, elem);
+    wrapper.appendChild(elem);
+
+    var overlay = document.createElement('div');
+    overlay.className="mask flex-center rgba-green-strong";
+    elem.parentNode.insertBefore(overlay,elem.nextSibling);
+}
 
     // eel.get_image(word)(function(ret){
     //     eel.image_download(ret);
