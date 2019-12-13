@@ -8,6 +8,9 @@ import eel
 
 eel.init('web')
 
+google_api_key = "AIzaSyBa6-mI1X2bKcSPDvJxs4Xvbxq-ZeSd87w"
+google_cx="008875257392179325686:nuke64lz8rv"
+
 dir_path = os.path.dirname(os.path.realpath(__file__))
 mydb = mysql.connector.connect(
     host='localhost',
@@ -116,6 +119,8 @@ def get_image(search_term):
 
     number_images = 10
     images = requests.get("https://pixabay.com/api/?key=14522522-8f22d055987d89c99c8dc4f24&q={}&per_page={}".format(search_term,number_images))
+    if (images != 200):
+        return False 
     images_json_dict = images.json()
 
     hits = images_json_dict["hits"]
@@ -137,6 +142,19 @@ def persist_image(url):
                     with open(dir_path+r'\\images\\{}.jpg'.format(name),'wb') as f:
                         f.write(picture_request.content)
     return True
+
+#Uses the google image search API
+@eel.expose
+def google_image(search_term):
+    urls = []
+    google_request = requests.get("https://www.googleapis.com/customsearch/v1?key={}&cx={}&q={}&searchType=image&fileType=jpg&imgSize=medium&alt=json".format(google_api_key,google_cx,search_term))
+    google_request = google_request.json()
+    hits = google_request["items"]
+    #print(google_request)
+
+    for i in range(len(hits)):
+         urls.append(hits[i]["link"])
+    return urls   
 	
 @eel.expose
 def image_download(url):
