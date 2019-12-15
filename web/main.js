@@ -9,6 +9,8 @@ function getWord(){
 
     word = String(document.getElementById("form_word").value);
     word = word.replace(/^\s+/g, '');
+    var icon = document.getElementById("icon");
+    icon.className = "icon-bubbles m-auto text-primary";
     //put the returned values into html elements
     eel.getData(word)(function(ret) {
         var word = ret[0];
@@ -34,22 +36,76 @@ function getWord(){
         }
 
         var ele_row = document.getElementsByClassName('row text-center text-lg-left')[0];
-        console.log(ele_row);
         
         for (i=0;i<8;i++){
             var ele_div_outer =document.createElement("div");
             ele_div_outer.className = "col-lg-3 col-md-4 col-6";
             ele_a = document.createElement("a");
-            ele_a.className = "d-block mb-4 h-100";
+            ele_a.className = "d-block h-100";
+            var wrapper = document.createElement('div');
+            wrapper.className = "view";
             ele_img = document.createElement("img");
             ele_img.className="img-fluid img-thumbnail";
+            ele_img.id=String(i);
             ele_img.setAttribute('src', ret[i]);
+            ele_img.setAttribute('onclick', 'selectImage(this);');
             ele_row.appendChild(ele_div_outer);
             ele_div_outer.appendChild(ele_a);
-            ele_a.appendChild(ele_img);
+            var parent = ele_a.parentNode;
+            parent.replaceChild(wrapper, ele_a);
+            wrapper.appendChild(ele_a);
+            ele_div_outer.appendChild(wrapper);
+            wrapper.appendChild(ele_img);
+            var overlay = document.createElement('div');
+            overlay.setAttribute('onclick', 'selectImage(this);');
+            overlay.id = "overlay_id"+String(i);
+            ele_img.parentNode.insertBefore(overlay,ele_img.nextSibling);
         }
 
     });  
+};
+
+//Functions for green overlay on image selection
+
+var selected_before = false;
+var previously_selected_id = 11; //should be more than the number of images
+var url_selected_image = ""; //Stores the url of the selected image
+
+function selectImage(elem){
+
+//Each img has an ID corresponding to the image number. If a picture is clicked once the element passed to selectImage is 
+//an IMG but once the overlay class is applied clicking the image a second time passes a DIV to the selectImage function.
+//This part gets the image number to be used further down for checking if that image was previously selected.
+    if(elem.tagName == "IMG"){
+        var image_no = parseInt(elem.id);
+    } else {
+        var image_no = parseInt(elem.previousSibling.id);
+    }    
+
+//If the image wasn't selected before then apply the class to the overlay, set selected_before == true and then
+//set global variable previously_selected_id to the image_no (the image clicked). Return out of the function
+//so as not to run the second if statement.
+
+    if(selected_before == false){
+        var url_selected_image = elem.src;
+      
+        var overlay = document.getElementById("overlay_id"+String(image_no));
+        overlay.className = "mask flex-center rgba-green-strong";
+        selected_before=true;
+        previously_selected_id = image_no;
+        return
+    };
+
+//If the image clicked was already selected then remove the overlay class effectively hiding the
+//green overlay. And turn selected_before back to false to enable the process to happen again. 
+
+    if(image_no == previously_selected_id){
+        var overlay = document.getElementById("overlay_id"+String(image_no));
+        overlay.classList.remove("rgba-green-strong");
+        overlay.classList.remove("flex-center");
+        overlay.classList.remove("mask");
+        selected_before=false;
+    };
 };
 
     // eel.get_image(word)(function(ret){

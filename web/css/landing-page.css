@@ -130,3 +130,44 @@ footer.footer {
   height: 15vw;
   object-fit: cover;
 }
+
+.view {
+  padding:none;
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+  width: 255;
+}
+
+.view .mask {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-attachment: fixed
+}
+
+.flex-center {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+  height: 100%
+}
+
+.rgba-green-strong,
+.rgba-green-strong:after {
+    background-color: rgba(76, 175, 80, 0.7)
+}
+
+
+
