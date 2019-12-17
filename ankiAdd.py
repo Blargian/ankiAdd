@@ -19,6 +19,9 @@ mydb = mysql.connector.connect(
     database="ankiadd"
 )
 
+#Dictionary which will store data and be used to covert it to a JSON file (RESTful API type idea)
+word_data = {}
+
 #This function takes in a word as parameter and returns the word and type
 @eel.expose
 def getData(word):
@@ -72,6 +75,8 @@ def getData(word):
             result=cursor.fetchone()
             partner = ''.join(result[0])
 
+        #Add to the dictionary for JSON
+        word_data['word'] = word
         return accented, category, translation
     else:
         print("not found")
@@ -110,7 +115,8 @@ def get_pronounciation(word):
         except:
                 os.mkdir(dir_path+r'\\audio\\')
                 with open(dir_path+r'\\audio\\{}.mp3'.format(word),'wb') as f:
-                    f.write(pronounce_request.content)    
+                    f.write(pronounce_request.content)   
+        word_data['pronounciation'] = {'audio_name':word,'audio_url':dir_path+r'\\audio\\{}.mp3'.format(word)}
     
 
 #This function uses the Forvo API to pullthrough the audio pronounciation.
@@ -160,6 +166,11 @@ def google_image(search_term):
 def image_download(url):
     pool = Pool(20)
     results = pool.map(persist_image, url)
+
+def createJSON():
+    with open('word_data.txt','w') as outfile:
+        json.dump(word_data,outfile)
+
 
 if __name__ == '__main__':
     eel.start('index.html', size=(1000, 600))
