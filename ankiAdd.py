@@ -3,30 +3,42 @@ import time
 import urllib.request
 import requests
 import os
+from pathlib import Path
 from multiprocessing import Pool
 import eel
+import json
+import sys
+import module_locator
+import shutil
+
+# "C:\Program Files\Anki\anki" -b "C:\Users\Shaun\Desktop"
 
 eel.init('web')
 
-google_api_key = "AIzaSyBa6-mI1X2bKcSPDvJxs4Xvbxq-ZeSd87w"
-google_cx="008875257392179325686:nuke64lz8rv"
-
+#Please add your keys to your system env variables 
+google_api_key = os.environ.get('google_api_key')
+google_cx= os.environ.get('google_cx')
 dir_path = os.path.dirname(os.path.realpath(__file__))
 mydb = mysql.connector.connect(
     host='localhost',
     user="root",
-    passwd="MySQLBl@rg1@n95",
-    database="ankiadd"
+    passwd= os.environ.get('mysql_db_password'),
+    database="ankiadd",
+    auth_plugin='mysql_native_password'
 )
 
 #Dictionary which will store data and be used to covert it to a JSON file (RESTful API type idea)
 word_data = {}
+sys.path.append("C:/Users/Shaun/Documents/Personal_Projects/ankiExperiment/anki-scripting/anki")
+from anki.storage import Collection
+PROFILE_HOME = os.path.expanduser("C:/Users/Shaun/Desktop/User 1")
+cpath = os.path.join(PROFILE_HOME, "collection.anki2")
 
 #This function takes in a word as parameter and returns the word and type
 @eel.expose
 def getData(word):
     
-    cursor = mydb.cursor()
+    cursor = mydb.cursor(buffered=True)
     search_string = word
 
     #return the word from the database
@@ -77,7 +89,7 @@ def getData(word):
 
         #Add to the dictionary for JSON
         word_data['word'] = word
-        return accented, category, translation
+        return word, category, translation, accented
     else:
         print("not found")
         return False
@@ -91,7 +103,8 @@ def get_pronounciation(word):
     UTF8 = str(UTF8)[2:-1]
     UTF8 = UTF8.replace("\\x","%").upper()
     #print(UTF8)
-    search = "https://apifree.forvo.com/action/word-pronunciations/format/json/word/{}/id_lang_speak/138/key/de6f30e76ae422dd36a2b7367439d5fd/".format(UTF8)
+    forvo_key = os.environ.get('forvo_key')
+    search = "https://apifree.forvo.com/action/word-pronunciations/format/json/word/{}/id_lang_speak/138/key/{}/".format(UTF8,forvo_key)
     #print(search)
 
     try:
@@ -107,16 +120,21 @@ def get_pronounciation(word):
     for i in range(len(items)):
         urls.append(items[i]["pathmp3"])
 
-    pronounce_request = requests.get(urls[0],headers=headers)
-    if pronounce_request.status_code == 200:
-        try:
-            with open(dir_path+r'\\audio\\{}.mp3'.format(word),'wb') as f:
-                f.write(pronounce_request.content)
-        except:
-                os.mkdir(dir_path+r'\\audio\\')
+    if(len(urls)!=0):
+        pronounce_request = requests.get(urls[0],headers=headers)
+        if pronounce_request.status_code == 200:
+            try:
                 with open(dir_path+r'\\audio\\{}.mp3'.format(word),'wb') as f:
-                    f.write(pronounce_request.content)   
-        word_data['pronounciation'] = {'audio_name':word,'audio_url':dir_path+r'\\audio\\{}.mp3'.format(word)}
+                    f.write(pronounce_request.content)
+            except:
+                    os.mkdir(dir_path+r'\\audio\\')
+                    with open(dir_path+r'\\audio\\{}.mp3'.format(word),'wb') as f:
+                        f.write(pronounce_request.content)   
+            word_data['pronounciation'] = {'audio_name':word,'audio_url':dir_path+r'\\audio\\{}.mp3'.format(word)}
+    else:
+        print("There was a problem retrieving pronounciation")
+        return False
+        
     
 
 #This function uses the Forvo API to pullthrough the audio pronounciation.
@@ -124,7 +142,8 @@ def get_pronounciation(word):
 def get_image(search_term):
 
     number_images = 10
-    images = requests.get("https://pixabay.com/api/?key=14522522-8f22d055987d89c99c8dc4f24&q={}&per_page={}".format(search_term,number_images))
+    pixabay_key = os.environ.get('pixabay_key')
+    images = requests.get("https://pixabay.com/api/?key={}&q={}&per_page={}".format(pixabay_key,search_term,number_images))
     if (images != 200):
         return False 
     images_json_dict = images.json()
@@ -136,17 +155,18 @@ def get_image(search_term):
 
     return urls   
 
-def persist_image(url):
-    name = url[24:-10]
+@eel.expose
+def persist_image(url,word):
     picture_request = requests.get(url)
     if picture_request.status_code == 200:
             try:
-                with open(dir_path+r'\\images\\{}.jpg'.format(name),'wb') as f:
+                with open(dir_path+r'\\images\\{}.jpg'.format(word),'wb') as f:
                     f.write(picture_request.content)
             except:
                     os.mkdir(dir_path+r'\\images\\')
-                    with open(dir_path+r'\\images\\{}.jpg'.format(name),'wb') as f:
+                    with open(dir_path+r'\\images\\{}.jpg'.format(word),'wb') as f:
                         f.write(picture_request.content)
+            word_data['image'] = {'image_name':word,'img_url':dir_path+r'\\img\\{}.jpg'.format(word)}
     return True
 
 #Uses the google image search API
@@ -162,16 +182,137 @@ def google_image(search_term):
          urls.append(hits[i]["link"])
     return urls   
 	
-@eel.expose
-def image_download(url):
-    pool = Pool(20)
-    results = pool.map(persist_image, url)
+# @eel.expose
+# def image_download(url):
+#     pool = Pool(20)
+#     results = pool.map(persist_image, url)
 
+@eel.expose
 def createJSON():
-    with open('word_data.txt','w') as outfile:
+    with open('word_data.json','w') as outfile:
         json.dump(word_data,outfile)
 
+class Word:
+    def __init__(self,doc):
+        self.doc = doc
+
+    def title(self):
+        return self.doc['word']
+
+    def audio_url(self):
+        if "pronounciation" in self.doc:
+            return self.doc["pronounciation"]["audio_url"]
+
+    def image_url(self):
+        if "image" in self.doc:
+            return self.doc["image"]["img_url"]
+    
+#Credit for this code belongs to Julien Sobczak and modified slightly for my purposes   
+def load(col,filepath):
+
+    audio_directory = os.path.join(os.path.dirname(filepath),'audio')
+    image_directory = os.path.join(os.path.dirname(filepath),'images')
+    basename = os.path.basename(filepath)
+
+    media_directory = os.path.join(os.path.dirname(col.path),"collection.media")
+    print("media directory: ", media_directory)
+
+    print("Opening file %s" % filepath)
+    with open(filepath, 'r') as f:
+        json_content = f.read()
+        doc = json.loads(json_content)
+        word = Word(doc)
+
+        fields = {}
+        fields["Word"] = word.title()
+        fields["example sentence"] = "no example sentence"
+        fields["Gender, Personal Connection, Extra Info (Back side)"] = "N/A"
+
+        if word.audio_url():
+            filename = "{}".format(word.title())
+            possible_extensions = ['ogg', 'mp3']
+            for extension in possible_extensions:
+                audio_name = filename + '.' + extension
+                audio_path = os.path.join(audio_directory, audio_name)
+                if os.path.exists(audio_path):
+                    source_path = audio_path
+                    target_path = os.path.join(media_directory, audio_name)
+                    print("Copying media file %s to %s" %
+                        (source_path, target_path))
+                    col.media.addFile(source_path)
+                    #shutil.copyfile(source_path, target_path)
+                    fields["Pronunciation (Recording and/or IPA)"] = "[sound:%s]" % audio_name
+
+        if word.image_url():
+            image_name = word.title()+".jpg"
+            image_path = os.path.join(image_directory, image_name)
+            if os.path.exists(image_path):
+                source_path = os.path.join(image_directory, image_name)
+                target_path = os.path.join(media_directory, image_name)
+                print("Copying media file %s to %s" %
+                    (source_path, target_path))
+                col.media.addFile(source_path)
+                #shutil.copyfile(source_path, target_path)
+                fields["Picture"] = '<img src="%s">' % image_name
+
+        # Ordered fields as defined in Anki note type
+
+        # Get the deck
+
+        modelBasic = col.models.byName('Picture Words')
+        col.decks.current()['mid'] = modelBasic['id']
+
+        deck = col.decks.byName("Russian Test")
+
+        # Instantiate the new note
+        note = col.newNote()
+        note.model()['did'] = deck['id']
+
+        anki_fields = [
+            "Word",
+            "Picture",
+            "Gender, Personal Connection, Extra Info (Back side)",
+            "Pronunciation (Recording and/or IPA)",
+            "example sentence"
+        ]
+
+        for field, value in fields.items():
+            note.fields[anki_fields.index(field)] = value
+
+        # Add the note and save to the database
+        col.addNote(note)
+        col.save()
+        col.close()
+        print("added to database")
+
+@eel.expose
+def callLoad():
+    col = Collection(cpath, log=True)
+    json_pattern = "word_data.json"
+    main_script_path = module_locator.module_path()
+    file_pattern = os.path.join(main_script_path,json_pattern)
+    load(col,file_pattern)
+ 
+#function to delete the audio and images folder on startup
+@eel.expose
+def clearSpace():
+
+    json_pattern = "word_data.json"
+    main_script_path = module_locator.module_path()
+    file_pattern = os.path.join(main_script_path,json_pattern)
+    audio_directory = os.path.join(os.path.dirname(file_pattern),'audio\\').strip()
+    image_directory = os.path.join(os.path.dirname(file_pattern),'images\\').strip()
+    print(image_directory)
+    print(os.path.exists(image_directory))
+    if os.path.exists(image_directory):
+        shutil.rmtree(image_directory, ignore_errors=True)
+        print('initialised')
+    if os.path.exists(audio_directory):
+        shutil.rmtree(audio_directory, ignore_errors=True)
+        print('initialised')
 
 if __name__ == '__main__':
+    #Clear the environment
+    clearSpace()
     eel.start('index.html', size=(1000, 600))
-    
+    #pass

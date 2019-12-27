@@ -1,2 +1,3 @@
-/audio/
-/images/
+audio/
+images/
+env/

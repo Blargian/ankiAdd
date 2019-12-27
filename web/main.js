@@ -57,9 +57,12 @@ function clear_images(){
 //This function is called when the search button is clicked. It formats the search term and then if the
 //words does exist in the database it calls the function for the google search and image population. 
 
+var glob_word_searched = "";
+
 function getWord(){
 
     word = String(document.getElementById("form_word").value);
+    console.log(word)
     word = word.replace(/^\s+/g, '');
     var icon = document.getElementById("icon");
     icon.className = "icon-bubbles m-auto text-primary";
@@ -77,16 +80,21 @@ function getWord(){
                 event.preventDefault()
             });
 
-            word_searched.textContent = ret[0];
+            word_searched.textContent = ret[3];
+            glob_word_searched = ret[0]; //set the global word variable to be used when the add to anki button is pressed
+            console.log("glob_word_searched" + glob_word_searched)
             word_category.textContent = ret[1];
             word_translation.textContent = ret[2];
+
+            var word_box = document.getElementById("word_box");
+            word_box.classList.remove("d-none");
 
             clear_images();
             retrieve_images(word);
             }
     });
 
-    //eel.get_pronounciation(word);
+    //
 
     // eel.get_image(word)(function(ret){
     //     eel.image_download(ret);
@@ -94,8 +102,6 @@ function getWord(){
 
     //handling of the images
 };
-
-
 
 //Functions for green overlay on image selection
 
@@ -119,7 +125,9 @@ function selectImage(elem){
 //so as not to run the second if statement.
 
     if(selected_before == false){
-        var url_selected_image = elem.src;
+        url_selected_image = elem.src;
+        var add_button = document.getElementById("add_button");
+        add_button.classList.remove("disabled");
       
         var overlay = document.getElementById("overlay_id"+String(image_no));
         overlay.className = "mask flex-center rgba-green-strong";
@@ -137,11 +145,26 @@ function selectImage(elem){
         overlay.classList.remove("flex-center");
         overlay.classList.remove("mask");
         selected_before=false;
+
+        var add_button = document.getElementById("add_button");
+        add_button.classList.add("disabled");
     };
 };
 
-    // eel.get_image(word)(function(ret){
-    //     eel.image_download(ret);
-    // });
+function addTo(){
+    eel.clearSpace()
+    eel.get_pronounciation(glob_word_searched);
+    eel.persist_image(url_selected_image,glob_word_searched);
+    eel.createJSON();
+    eel.callLoad();
+
+    selected_before = false;
+    previously_selected_id = 11; //should be more than the number of images
+    url_selected_image = ""; //Stores the url of the selected image
+
+    var add_button = document.getElementById("add_button");
+    add_button.classList.add("disabled");
+}
+
     
 
