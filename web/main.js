@@ -1,42 +1,21 @@
-document.addEventListener("DOMContentLoaded", function(event) { 
-    var word_searched = document.getElementById('word_searched');
-    var category = document.getElementById('word_category');
-    event.preventDefault()
-});
 
+// This function takes the word to search and retrieves a list of image urls from Python
+// then populates the images on the page as html elements.
 
-function getWord(){
+function retrieve_images(word) {
 
-    word = String(document.getElementById("form_word").value);
-    word = word.replace(/^\s+/g, '');
-    var icon = document.getElementById("icon");
-    icon.className = "icon-bubbles m-auto text-primary";
-    //put the returned values into html elements
-    eel.getData(word)(function(ret) {
-        var word = ret[0];
-        var category = ret[1];
-        var translation = ret[2];
-        word_searched.textContent = word;
-        word_category.textContent = category;
-        word_translation.textContent = translation;
-    });
+    if(word == false){
+        return;
+    }
 
-    eel.get_pronounciation(word);
+    eel.google_image(word)(get_url);
 
-    // eel.get_image(word)(function(ret){
-    //     eel.image_download(ret);
-    // });
+    function get_url(ret){
 
-    //handling of the images
-
-    eel.google_image(word)(function(ret) {
-
-        if(String(ret)=="False"){
-            console.log("No results found");
-        }
+        google_urls = ret;
 
         var ele_row = document.getElementsByClassName('row text-center text-lg-left')[0];
-        
+    
         for (i=0;i<8;i++){
             var ele_div_outer =document.createElement("div");
             ele_div_outer.className = "col-lg-3 col-md-4 col-6";
@@ -47,7 +26,7 @@ function getWord(){
             ele_img = document.createElement("img");
             ele_img.className="img-fluid img-thumbnail";
             ele_img.id=String(i);
-            ele_img.setAttribute('src', ret[i]);
+            ele_img.setAttribute('src', google_urls[i]);
             ele_img.setAttribute('onclick', 'selectImage(this);');
             ele_row.appendChild(ele_div_outer);
             ele_div_outer.appendChild(ele_a);
@@ -61,8 +40,67 @@ function getWord(){
             overlay.id = "overlay_id"+String(i);
             ele_img.parentNode.insertBefore(overlay,ele_img.nextSibling);
         }
+    }
+} 
 
-    });  
+//This function clears the image results 
+
+function clear_images(){
+    var ele_row = document.getElementsByClassName('row text-center text-lg-left')[0];
+    var child = ele_row.lastElementChild;
+    while (child) { 
+        ele_row.removeChild(child); 
+        child = ele_row.lastElementChild; 
+    }
+}
+
+//This function is called when the search button is clicked. It formats the search term and then if the
+//words does exist in the database it calls the function for the google search and image population. 
+
+var glob_word_searched = "";
+
+function getWord(){
+
+    word = String(document.getElementById("form_word").value);
+    console.log(word)
+    word = word.replace(/^\s+/g, '');
+    var icon = document.getElementById("icon");
+    icon.className = "icon-bubbles m-auto text-primary";
+    //put the returned values into html elements
+    eel.getData(word)(function(ret) {
+
+        if(ret ==false){
+            clear_images();
+            return;
+        } else{
+
+            document.addEventListener("DOMContentLoaded", function(event) { 
+                var word_searched = document.getElementById('word_searched');
+                var category = document.getElementById('word_category');
+                event.preventDefault()
+            });
+
+            word_searched.textContent = ret[3];
+            glob_word_searched = ret[0]; //set the global word variable to be used when the add to anki button is pressed
+            console.log("glob_word_searched" + glob_word_searched)
+            word_category.textContent = ret[1];
+            word_translation.textContent = ret[2];
+
+            var word_box = document.getElementById("word_box");
+            word_box.classList.remove("d-none");
+
+            clear_images();
+            retrieve_images(word);
+            }
+    });
+
+    //
+
+    // eel.get_image(word)(function(ret){
+    //     eel.image_download(ret);
+    // });
+
+    //handling of the images
 };
 
 //Functions for green overlay on image selection
@@ -87,7 +125,9 @@ function selectImage(elem){
 //so as not to run the second if statement.
 
     if(selected_before == false){
-        var url_selected_image = elem.src;
+        url_selected_image = elem.src;
+        var add_button = document.getElementById("add_button");
+        add_button.classList.remove("disabled");
       
         var overlay = document.getElementById("overlay_id"+String(image_no));
         overlay.className = "mask flex-center rgba-green-strong";
@@ -105,11 +145,26 @@ function selectImage(elem){
         overlay.classList.remove("flex-center");
         overlay.classList.remove("mask");
         selected_before=false;
+
+        var add_button = document.getElementById("add_button");
+        add_button.classList.add("disabled");
     };
 };
 
-    // eel.get_image(word)(function(ret){
-    //     eel.image_download(ret);
-    // });
+function addTo(){
+    eel.clearSpace()
+    eel.get_pronounciation(glob_word_searched);
+    eel.persist_image(url_selected_image,glob_word_searched);
+    eel.createJSON();
+    eel.callLoad();
+
+    selected_before = false;
+    previously_selected_id = 11; //should be more than the number of images
+    url_selected_image = ""; //Stores the url of the selected image
+
+    var add_button = document.getElementById("add_button");
+    add_button.classList.add("disabled");
+}
+
     
 

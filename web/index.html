@@ -60,7 +60,7 @@
   </header>
 
   <!-- Icons Grid -->
-  <section class="features-icons bg-light text-center">
+  <section class="features-icons bg-light text-center d-none" id="word_box">
     <div class="container">
       <div class="row">
         <div class="col-lg-4">
@@ -86,13 +86,15 @@
 
   </div>
 
+  <div class="container pl-0 pr-0">
+  <div class="row">
+    <button type="button" id="add_button" class="btn btn-lg btn-primary mt-1 disabled" onclick="addTo();">Add to Anki  <i class="icon-rocket id="icon"></i></button>
+  </div>  
+  </div>
+
 </div>
 
-<div class="container">
-  <div class="row">
-    <button type="button" class="btn btn-lg btn-primary" disabled>Add to Anki  <i class="icon-rocket id="icon"></i></button>
-  </div>
-</div>
+
 
   <!-- Footer -->
   <footer class="footer bg-light">
