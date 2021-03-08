@@ -22,3 +22,5 @@ The app works okay as a basic prototype however it has some problems which I wou
 - The database being used is SQL and it's a bit of a pain to set that up. I'd like to migrate it to a mongodb database and then run the whole app using nodeJS.
 - I have sphagetti code for the DOM manipulation. I'd like to redo the front end using React and implement state management using Redux. 
 - I'd like to try and use electron rather than eel and use a node python plugin for running the python script.
+
+Version two is being built here: https://github.com/Blargian/AnkiAdder
